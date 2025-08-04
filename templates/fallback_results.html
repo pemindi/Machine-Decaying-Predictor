@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallback Analysis Results - Machine Decay Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #fd7e14 0%, #ffc107 100%);
+            color: white;
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .visualization-container {
+            max-width: 100%;
+            overflow-x: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .visualization-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #fd7e14, #ffc107);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .fallback-indicator {
+            background: linear-gradient(135deg, #fd7e14, #ffc107);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .confidence-indicator {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .fallback-summary {
+            background: linear-gradient(135deg, #fd7e14, #ffc107);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg gradient-bg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-history me-2"></i>
+                Fallback Days Analysis Results
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white" href="/">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    New Analysis
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Results Header -->
+    <div class="container-fluid gradient-bg py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold mb-2">Fallback Days Analysis Results</h1>
+                    <p class="lead mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Time-window curve fitting with bootstrap confidence intervals
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <a href="/download_report/{{ report_filename }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-download me-2"></i>
+                            Download Report
+                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary btn-lg dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-tools me-2"></i>
+                                Try Other Method
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/?try_incremental=true&session={{ session_id }}">
+                                    <i class="fas fa-layer-group me-2"></i>
+                                    Try Incremental Method
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/">
+                                    <i class="fas fa-plus me-2"></i>
+                                    New Analysis (Upload New Files)
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- Analysis Configuration Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="fallback-summary">
+                    <h4 class="mb-3">
+                        <i class="fas fa-cog me-2"></i>
+                        Fallback Analysis Configuration
+                    </h4>
+                    <!-- Update the configuration summary to include selected models -->
+                    <div class="row">
+                        <div class="col-md-2">
+                            <h6><i class="fas fa-calendar-days me-2"></i>Fallback Days:</h6>
+                            <p class="mb-0"><strong>{{ fallback_days }}</strong> days lookback</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6><i class="fas fa-chart-bar me-2"></i>Baseline %:</h6>
+                            <p class="mb-0"><strong>{{ baseline_percentage }}%</strong> for threshold</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6><i class="fas fa-chart-line me-2"></i>Curve Fit %:</h6>
+                            <p class="mb-0"><strong>{{ curve_fit_percentage }}%</strong> for fitting</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-list me-2"></i>Parameters:</h6>
+                            <p class="mb-0"><strong>{{ parameters|join(', ') }}</strong></p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><i class="fas fa-cogs me-2"></i>Models:</h6>
+                            <p class="mb-0"><strong>{{ selected_models|length }}</strong> models selected</p>
+                        </div>
+                    </div>
+                    {% if start_date and end_date %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><i class="fas fa-calendar-alt me-2"></i>Date Range:</h6>
+                            <p class="mb-0"><strong>{{ start_date }} to {{ end_date }}</strong></p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Analysis Summary
+                </h3>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ fallback_days }}</div>
+                    <div>Fallback Days</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ graph_files|length }}</div>
+                    <div>Total Visualizations</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ parameters|length }}</div>
+                    <div>Parameters Analyzed</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="stats-number">2</div>
+                    <div>Datasets Processed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Features Notice -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-history me-2"></i>
+                        Fallback Method Features Active
+                    </h5>
+                    <p class="mb-2">✅ <strong>Curve Fitting:</strong> Exponential and polynomial models with automatic selection</p>
+                    <p class="mb-2">✅ <strong>Bootstrap Confidence Intervals:</strong> 90% confidence bands for uncertainty quantification</p>
+                    <p class="mb-2">✅ <strong>Fallback Analysis:</strong> Multiple time windows tested for robust predictions</p>
+                    <p class="mb-2">✅ <strong>Threshold-based Prediction:</strong> Failure dates based on statistical thresholds</p>
+                    <p class="mb-0">✅ <strong>Dual Visualizations:</strong> Main analysis and fallback fit comparison</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Visualizations Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    <i class="fas fa-chart-area me-2"></i>
+                    Fallback Analysis Visualizations
+                    <span class="confidence-indicator">With Bootstrap CI</span>
+                </h3>
+                <p class="text-muted mb-4">
+                    All {{ graph_files|length }} visualizations showing curve fitting analysis with confidence intervals. 
+                    Click on each card to expand and view the detailed visualization.
+                </p>
+            </div>
+        </div>
+        
+        {% for graph_file in graph_files %}
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card result-card">
+                    <div class="card-header d-flex justify-content-between align-items-center" 
+                         style="cursor: pointer;" 
+                         onclick="toggleVisualization('viz-{{ loop.index }}')"
+                         data-bs-toggle="collapse" 
+                         data-bs-target="#viz-{{ loop.index }}" 
+                         aria-expanded="false">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            {{ graph_file.replace('_', ' ').replace('.png', '').title() }}
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <span class="fallback-indicator me-2">
+                                Analysis {{ loop.index }} of {{ graph_files|length }}
+                            </span>
+                            <span class="confidence-indicator me-3">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Bootstrap CI
+                            </span>
+                            <i class="fas fa-chevron-down toggle-icon" id="icon-viz-{{ loop.index }}"></i>
+                        </div>
+                    </div>
+                    <div class="collapse" id="viz-{{ loop.index }}">
+                        <div class="card-body">
+                            <div class="visualization-container">
+                                <img src="{{ url_for('static', filename='graphs/' + graph_file) }}" 
+                                     class="visualization-image" 
+                                     alt="Fallback Analysis with Confidence Intervals"
+                                     loading="lazy">
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    This visualization shows curve fitting analysis with bootstrap confidence intervals. 
+                                    Top plot shows main analysis, bottom plot shows fallback fit comparison.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Results Summary Tables -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    <i class="fas fa-table me-2"></i>
+                    Detailed Results Summary
+                </h3>
+            </div>
+        </div>
+
+        <!-- Lower Dataset Results -->
+        {% if lower_results %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card result-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-arrow-down me-2"></i>
+                            Lower Dataset Results
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Model</th>
+                                        <th>R² Score</th>
+                                        <th>RMSE</th>
+                                        <th>Threshold</th>
+                                        <th>Failure Date</th>
+                                        <th>Fallback Prediction</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in lower_results %}
+                                    <tr>
+                                        <td><strong>{{ result.param }}</strong></td>
+                                        <td>{{ result.model }}</td>
+                                        <td>{{ "%.4f"|format(result.r2) }}</td>
+                                        <td>{{ "%.4f"|format(result.rmse) }}</td>
+                                        <td>{{ "%.2f"|format(result.threshold) }}</td>
+                                        <td>
+                                            {% if result.failure_date %}
+                                                <span class="badge bg-warning">{{ result.failure_date.strftime('%Y-%m-%d') }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No prediction</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if result.fallback_results.selected_fit and result.fallback_results.selected_fit.fail_date %}
+                                                <span class="badge bg-info">{{ result.fallback_results.selected_fit.fail_date.strftime('%Y-%m-%d') }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No fallback</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Upper Dataset Results -->
+        {% if upper_results %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card result-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-arrow-up me-2"></i>
+                            Upper Dataset Results
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Model</th>
+                                        <th>R² Score</th>
+                                        <th>RMSE</th>
+                                        <th>Threshold</th>
+                                        <th>Failure Date</th>
+                                        <th>Fallback Prediction</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in upper_results %}
+                                    <tr>
+                                        <td><strong>{{ result.param }}</strong></td>
+                                        <td>{{ result.model }}</td>
+                                        <td>{{ "%.4f"|format(result.r2) }}</td>
+                                        <td>{{ "%.4f"|format(result.rmse) }}</td>
+                                        <td>{{ "%.2f"|format(result.threshold) }}</td>
+                                        <td>
+                                            {% if result.failure_date %}
+                                                <span class="badge bg-warning">{{ result.failure_date.strftime('%Y-%m-%d') }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No prediction</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if result.fallback_results.selected_fit and result.fallback_results.selected_fit.fail_date %}
+                                                <span class="badge bg-info">{{ result.fallback_results.selected_fit.fail_date.strftime('%Y-%m-%d') }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">No fallback</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Download Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card result-card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-file-excel me-2"></i>
+                            Fallback Analysis Excel Report
+                        </h5>
+                        <p class="card-text text-muted">
+                            Download comprehensive Excel report with fallback analysis results, 
+                            model performance metrics, and failure date predictions.
+                        </p>
+                        <a href="/download_report/{{ report_filename }}" class="btn btn-lg" style="background: linear-gradient(135deg, #fd7e14, #ffc107); color: white; border: none;">
+                            <i class="fas fa-download me-2"></i>
+                            Download Complete Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="gradient-bg py-4">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 Enhanced Machine Decay Predictor. Fallback days analysis with confidence intervals.</p>
+        </div>
+    </footer>
+
+    <style>
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+        
+        .card-header[data-bs-toggle="collapse"] {
+            transition: background-color 0.3s ease;
+        }
+        
+        .card-header[data-bs-toggle="collapse"]:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .visualization-image {
+            transition: opacity 0.3s ease;
+        }
+        
+        .collapse.show .visualization-image {
+            opacity: 1;
+        }
+        
+        .collapse .visualization-image {
+            opacity: 0.8;
+        }
+    </style>
+
+    <script>
+        function toggleVisualization(vizId) {
+            const icon = document.getElementById('icon-' + vizId);
+            const collapse = document.getElementById(vizId);
+            
+            // Toggle icon rotation
+            setTimeout(() => {
+                if (collapse.classList.contains('show')) {
+                    icon.classList.add('rotated');
+                } else {
+                    icon.classList.remove('rotated');
+                }
+            }, 150);
+        }
+
+        // Initialize all collapse events
+        document.addEventListener('DOMContentLoaded', function() {
+            const collapseElements = document.querySelectorAll('.collapse');
+            collapseElements.forEach(function(element) {
+                element.addEventListener('shown.bs.collapse', function() {
+                    const vizId = this.id;
+                    const icon = document.getElementById('icon-' + vizId);
+                    if (icon) {
+                        icon.classList.add('rotated');
+                    }
+                });
+                
+                element.addEventListener('hidden.bs.collapse', function() {
+                    const vizId = this.id;
+                    const icon = document.getElementById('icon-' + vizId);
+                    if (icon) {
+                        icon.classList.remove('rotated');
+                    }
+                });
+            });
+        });
+    </script>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
