@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Machine Decay Predictor - Dual Analysis Methods</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9fa;
+        }
+        
+        .upload-area.file-selected {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        
+        .upload-area.file-restored {
+            border-color: #17a2b8;
+            background-color: #d1ecf1;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .method-tab {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .method-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .method-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        
+        .method-content {
+            display: none;
+        }
+        
+        .method-content.active {
+            display: block;
+        }
+        
+        .preprocessing-card {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .fallback-card {
+            background: linear-gradient(135deg, #fd7e14, #ffc107);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4>Processing Your Data...</h4>
+            <p class="text-muted" id="loadingMessage">Preparing analysis...</p>
+            <div class="progress mt-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg gradient-bg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-cogs me-2"></i>
+                Enhanced Machine Decay Predictor
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    Analysis Date: {{ current_date }}
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="container-fluid gradient-bg py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Dual Analysis Methods</h1>
+                    <p class="lead mb-4">Choose between <strong>Incremental Batch Analysis</strong> or <strong>Fallback Days Method</strong> for comprehensive machine decay prediction.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <span class="badge bg-light text-dark px-3 py-2">Incremental Batching</span>
+                        <span class="badge bg-light text-dark px-3 py-2">Fallback Analysis</span>
+                        <span class="badge bg-light text-dark px-3 py-2">Curve Fitting</span>
+                        <span class="badge bg-light text-dark px-3 py-2">Bootstrap CI</span>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card">
+                                <i class="fas fa-layer-group feature-icon"></i>
+                                <h5>Incremental Method</h5>
+                                <p class="text-muted">Progressive batch analysis</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card">
+                                <i class="fas fa-history feature-icon"></i>
+                                <h5>Fallback Method</h5>
+                                <p class="text-muted">Time-window curve fitting</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card">
+                                <i class="fas fa-chart-line feature-icon"></i>
+                                <h5>Advanced Models</h5>
+                                <p class="text-muted">Exponential & Polynomial</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="feature-card">
+                                <i class="fas fa-shield-alt feature-icon"></i>
+                                <h5>Confidence Intervals</h5>
+                                <p class="text-muted">Bootstrap uncertainty</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'warning' if category == 'warning' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        <!-- Single File Upload Section (Common for both methods) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card card-hover">
+                    <div class="card-header gradient-bg">
+                        <h4 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>
+                            Upload Data Files (Used for Both Methods)
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Lower Bound Data (CSV)</label>
+                                <div class="upload-area{% if session_files %} file-restored{% endif %}" id="lowerUploadArea" onclick="document.getElementById('lowerFile').click()">
+                                    {% if session_files %}
+                                        <i class="fas fa-history fa-2x mb-2 text-info"></i>
+                                        <p class="mb-1 fw-bold text-info">Previous File Restored</p>
+                                        <small class="text-muted">{{ session_files.lower_name.split('_', 2)[2] if session_files else '' }}</small>
+                                    {% else %}
+                                        <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
+                                        <p class="mb-1 fw-bold">Click to upload or drag & drop</p>
+                                        <small class="text-muted">Lower bound dataset CSV file</small>
+                                    {% endif %}
+                                </div>
+                                <input type="file" id="lowerFile" accept=".csv" style="display: none;" {% if not session_files %}required{% endif %}>
+                                <div id="lowerFileName" class="mt-2 text-success fw-bold"{% if session_files %} style="display: block;"{% else %} style="display: none;"{% endif %}>
+                                    {% if session_files %}
+                                        <i class="fas fa-history me-2"></i>{{ session_files.lower_name.split('_', 2)[2] }} (Previous Session)
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Upper Bound Data (CSV)</label>
+                                <div class="upload-area{% if session_files %} file-restored{% endif %}" id="upperUploadArea" onclick="document.getElementById('upperFile').click()">
+                                    {% if session_files %}
+                                        <i class="fas fa-history fa-2x mb-2 text-info"></i>
+                                        <p class="mb-1 fw-bold text-info">Previous File Restored</p>
+                                        <small class="text-muted">{{ session_files.upper_name.split('_', 2)[2] if session_files else '' }}</small>
+                                    {% else %}
+                                        <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
+                                        <p class="mb-1 fw-bold">Click to upload or drag & drop</p>
+                                        <small class="text-muted">Upper bound dataset CSV file</small>
+                                    {% endif %}
+                                </div>
+                                <input type="file" id="upperFile" accept=".csv" style="display: none;" {% if not session_files %}required{% endif %}>
+                                <div id="upperFileName" class="mt-2 text-success fw-bold"{% if session_files %} style="display: block;"{% else %} style="display: none;"{% endif %}>
+                                    {% if session_files %}
+                                        <i class="fas fa-history me-2"></i>{{ session_files.upper_name.split('_', 2)[2] }} (Previous Session)
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Upload Once, Use for Both Methods:</strong> These files will be used for whichever analysis method you choose below. 
+                                    After getting results, you can return here to try the other method with the same files!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Method Selection Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    <i class="fas fa-tools me-2"></i>
+                    Choose Analysis Method
+                </h3>
+            </div>
+            <div class="col-md-6">
+                <div class="method-tab {% if not try_fallback %}active{% endif %}" id="incrementalTab" onclick="selectMethod('incremental')">
+                    <h5 class="mb-2">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Incremental Batch Method
+                    </h5>
+                    <p class="mb-0">Progressive analysis with increasing batch sizes (100, 200, 300...)</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="method-tab {% if try_fallback %}active{% endif %}" id="fallbackTab" onclick="selectMethod('fallback')">
+                    <h5 class="mb-2">
+                        <i class="fas fa-history me-2"></i>
+                        Fallback Days Method
+                    </h5>
+                    <p class="mb-0">Time-window analysis with curve fitting and confidence intervals</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Method Configuration Forms -->
+        
+        <!-- Incremental Method Form -->
+        <div id="incrementalContent" class="method-content {% if not try_fallback %}active{% endif %}">
+            <div class="card card-hover">
+                <div class="card-header gradient-bg">
+                    <h4 class="mb-0">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Incremental Batch Analysis Configuration
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="incrementalForm" method="POST" action="/analyze_incremental" enctype="multipart/form-data">
+                        <!-- Hidden file inputs that will be populated by JavaScript -->
+                        <input type="file" name="lower_file" id="incrementalLowerFile" style="display: none;">
+                        <input type="file" name="upper_file" id="incrementalUpperFile" style="display: none;">
+                        
+                        <!-- Hidden retry session ID -->
+                        {% if session_id %}
+                        <input type="hidden" name="retry_session_id" value="{{ session_id }}">
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Preprocessing Option -->
+                                <div class="mb-4">
+                                    <div class="preprocessing-card">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="applyPreprocessing" name="apply_preprocessing" checked>
+                                            <label class="form-check-label fw-bold" for="applyPreprocessing">
+                                                <i class="fas fa-magic me-2"></i>
+                                                Apply Advanced Data Preprocessing
+                                            </label>
+                                        </div>
+                                        <small>
+                                            Includes filtering, date range conditions, and oversampling
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="batchSize" class="form-label fw-bold">Incremental Batch Size</label>
+                                    <input type="number" class="form-control" id="batchSize" name="batch_size" value="100" min="50" max="10000">
+                                    <small class="form-text text-muted">Starting size for incremental batches</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Processing Direction</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="forward" name="direction" value="forward" checked>
+                                        <label class="form-check-label" for="forward">Forward (chronological)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="backward" name="direction" value="backward">
+                                        <label class="form-check-label" for="backward">Backward (recent data)</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="criticalThreshold" class="form-label fw-bold">Critical Threshold</label>
+                                    <input type="number" class="form-control" id="criticalThreshold" name="critical_threshold" value="10" min="1" max="100" step="0.1">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Models to Analyze:</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" id="linear" name="models" value="linear" checked>
+                                                <label class="form-check-label" for="linear">Linear Regression</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" id="poly1" name="models" value="polynomial_1" checked>
+                                                <label class="form-check-label" for="poly1">Polynomial Degree 1</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" id="poly2" name="models" value="polynomial_2" checked>
+                                                <label class="form-check-label" for="poly2">Polynomial Degree 2</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" id="poly3" name="models" value="polynomial_3" checked>
+                                                <label class="form-check-label" for="poly3">Polynomial Degree 3</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" id="poly4" name="models" value="polynomial_4" checked>
+                                                <label class="form-check-label" for="poly4">Polynomial Degree 4</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input model-checkbox" type="checkbox" id="exponential" name="models" value="exponential" checked>
+                                                <label class="form-check-label" for="exponential">Exponential Decay</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-play me-2"></i>
+                                Start Incremental Analysis
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fallback Method Form -->
+        <div id="fallbackContent" class="method-content {% if try_fallback %}active{% endif %}">
+            <div class="card card-hover">
+                <div class="card-header" style="background: linear-gradient(135deg, #fd7e14, #ffc107); color: white;">
+                    <h4 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Fallback Days Method Configuration
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="fallbackForm" method="POST" action="/analyze_fallback" enctype="multipart/form-data">
+                        <!-- Hidden file inputs that will be populated by JavaScript -->
+                        <input type="file" name="lower_file" id="fallbackLowerFile" style="display: none;">
+                        <input type="file" name="upper_file" id="fallbackUpperFile" style="display: none;">
+                        
+                        <!-- Hidden retry session ID -->
+                        {% if session_id %}
+                        <input type="hidden" name="retry_session_id" value="{{ session_id }}">
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="fallback-card">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Fallback Method Features
+                                    </h6>
+                                    <ul class="mb-0">
+                                        <li>Automatic best model selection</li>
+                                        <li>Bootstrap confidence intervals</li>
+                                        <li>Fallback time window analysis</li>
+                                        <li>Threshold-based failure prediction</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="fallbackDays" class="form-label fw-bold">Fallback Days</label>
+                                    <input type="number" class="form-control" id="fallbackDays" name="fallback_days" value="1" min="1" max="30">
+                                    <small class="form-text text-muted">Days to look back for fallback analysis</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="baselinePercentage" class="form-label fw-bold">Baseline Percentage (%)</label>
+                                    <input type="number" class="form-control" id="baselinePercentage" name="baseline_percentage" value="25" min="10" max="50" step="5">
+                                    <small class="form-text text-muted">Percentage of data used for threshold calculation</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="curveFitPercentage" class="form-label fw-bold">Curve Fit Percentage (%)</label>
+                                    <input type="number" class="form-control" id="curveFitPercentage" name="curve_fit_percentage" value="75" min="50" max="100" step="5">
+                                    <small class="form-text text-muted">Percentage of data used for curve fitting</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Parameters to Analyze</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="rmsParam" name="parameters" value="RMS" checked>
+                                        <label class="form-check-label" for="rmsParam">RMS</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="energyParam" name="parameters" value="Energy">
+                                        <label class="form-check-label" for="energyParam">Energy</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="rulParam" name="parameters" value="Predicted RUL">
+                                        <label class="form-check-label" for="rulParam">Predicted RUL</label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Date Range (Optional)</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <input type="date" class="form-control" id="startDate" name="start_date">
+                                            <small class="form-text text-muted">Start date</small>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="date" class="form-control" id="endDate" name="end_date">
+                                            <small class="form-text text-muted">End date</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-lg px-5" style="background: linear-gradient(135deg, #fd7e14, #ffc107); color: white; border: none;">
+                                <i class="fas fa-play me-2"></i>
+                                Start Fallback Analysis
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="gradient-bg mt-5 py-4">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 Enhanced Machine Decay Predictor. Dual analysis methods for comprehensive predictions.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Global file storage
+    let uploadedFiles = {
+        lower: null,
+        upper: null
+    };
+
+    // Initialize session variables from server-side data
+    let isRetrySession = false;
+    let sessionId = "";
+    let shouldSelectFallback = false;
+    let shouldSelectIncremental = false;
+    
+    // Server-side data injection (safe from template parsing)
+    (function() {
+        // Session files check
+        const hasSessionFiles = document.querySelector('input[name="retry_session_id"]');
+        if (hasSessionFiles) {
+            isRetrySession = true;
+            sessionId = hasSessionFiles.value;
+        }
+        
+        // Method selection from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('try_fallback')) {
+            shouldSelectFallback = true;
+        } else if (urlParams.get('try_incremental')) {
+            shouldSelectIncremental = true;
+        }
+        
+        // Initialize restored files if session exists
+        if (isRetrySession) {
+            const lowerFileName = document.getElementById('lowerFileName');
+            const upperFileName = document.getElementById('upperFileName');
+            
+            if (lowerFileName && lowerFileName.textContent.includes('Previous Session')) {
+                const lowerName = lowerFileName.textContent.replace(/.*\s/, '').replace(' (Previous Session)', '');
+                uploadedFiles.lower = { 
+                    name: lowerName, 
+                    restored: true 
+                };
+            }
+            
+            if (upperFileName && upperFileName.textContent.includes('Previous Session')) {
+                const upperName = upperFileName.textContent.replace(/.*\s/, '').replace(' (Previous Session)', '');
+                uploadedFiles.upper = { 
+                    name: upperName, 
+                    restored: true 
+                };
+            }
+            
+            console.log('Files restored from session:', uploadedFiles);
+        }
+    })();
+
+    // Method selection
+    function selectMethod(method) {
+        // Update tabs
+        document.getElementById('incrementalTab').classList.remove('active');
+        document.getElementById('fallbackTab').classList.remove('active');
+        document.getElementById(method + 'Tab').classList.add('active');
+        
+        // Update content
+        document.getElementById('incrementalContent').classList.remove('active');
+        document.getElementById('fallbackContent').classList.remove('active');
+        document.getElementById(method + 'Content').classList.add('active');
+    }
+
+    // File upload handling for the shared upload area
+    function setupFileUpload(fileInputId, uploadAreaId, fileNameId, fileType) {
+        const fileInput = document.getElementById(fileInputId);
+        const uploadArea = document.getElementById(uploadAreaId);
+        const fileName = document.getElementById(fileNameId);
+        
+        if (!fileInput || !uploadArea || !fileName) {
+            console.error('File upload elements not found for:', fileType);
+            return;
+        }
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Store file globally
+                uploadedFiles[fileType] = file;
+                
+                // Update UI
+                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                fileName.innerHTML = '<i class="fas fa-check me-2"></i>' + file.name + ' (' + fileSizeMB + ' MB)';
+                fileName.style.display = 'block';
+                uploadArea.classList.remove('file-restored');
+                uploadArea.classList.add('file-selected');
+                uploadArea.innerHTML = '<i class="fas fa-check-circle fa-2x mb-2 text-success"></i>' +
+                                     '<p class="mb-1 fw-bold text-success">File Selected</p>' +
+                                     '<small class="text-muted">' + file.name + '</small>';
+                
+                console.log(fileType + ' file uploaded:', file.name);
+            }
+        });
+    }
+
+    // Setup file uploads for the shared upload area
+    setupFileUpload('lowerFile', 'lowerUploadArea', 'lowerFileName', 'lower');
+    setupFileUpload('upperFile', 'upperUploadArea', 'upperFileName', 'upper');
+
+    // Function to copy files to the active form before submission
+    function copyFilesToActiveForm(formId) {
+        console.log('Copying files to ' + formId + '...');
+        
+        // Get the form's hidden file inputs
+        const lowerInput = document.querySelector('#' + formId + ' input[name="lower_file"]');
+        const upperInput = document.querySelector('#' + formId + ' input[name="upper_file"]');
+        
+        if (!lowerInput || !upperInput) {
+            console.error('Could not find hidden file inputs in form');
+            return false;
+        }
+        
+        // For retry sessions, we don't need to copy files as they exist on server
+        if (isRetrySession && uploadedFiles.lower && uploadedFiles.lower.restored) {
+            console.log('Using restored files from server session');
+            return true;
+        }
+        
+        // Create new DataTransfer objects to hold the files
+        if (uploadedFiles.lower && !uploadedFiles.lower.restored) {
+            const lowerDataTransfer = new DataTransfer();
+            lowerDataTransfer.items.add(uploadedFiles.lower);
+            lowerInput.files = lowerDataTransfer.files;
+            console.log('Lower file copied to form:', uploadedFiles.lower.name);
+        }
+        
+        if (uploadedFiles.upper && !uploadedFiles.upper.restored) {
+            const upperDataTransfer = new DataTransfer();
+            upperDataTransfer.items.add(uploadedFiles.upper);
+            upperInput.files = upperDataTransfer.files;
+            console.log('Upper file copied to form:', uploadedFiles.upper.name);
+        }
+        
+        return true;
+    }
+
+    // Form validation and submission
+    function setupFormSubmission(formId, loadingMessage, validationCallback) {
+        const form = document.getElementById(formId);
+        if (!form) {
+            console.error('Form not found:', formId);
+            return;
+        }
+        
+        form.addEventListener('submit', function(e) {
+            // Check if files are available (either uploaded or restored)
+            if ((!uploadedFiles.lower || !uploadedFiles.upper) && !isRetrySession) {
+                e.preventDefault();
+                alert('Please upload both CSV files before starting the analysis.');
+                return;
+            }
+            
+            // Copy files to the active form (if not retry session)
+            if (!copyFilesToActiveForm(formId)) {
+                e.preventDefault();
+                alert('Error preparing files for submission. Please try again.');
+                return;
+            }
+            
+            // Run additional validation if provided
+            if (validationCallback && !validationCallback()) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Show loading overlay with specific message
+            const loadingMessageEl = document.getElementById('loadingMessage');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            if (loadingMessageEl) loadingMessageEl.textContent = loadingMessage;
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            const fileInfo = {
+                lower: uploadedFiles.lower ? uploadedFiles.lower.name : 'restored',
+                upper: uploadedFiles.upper ? uploadedFiles.upper.name : 'restored',
+                isRetrySession: isRetrySession
+            };
+            console.log(formId + ' submitted successfully with files:', fileInfo);
+        });
+    }
+
+    // Setup form submissions with validation
+    setupFormSubmission('incrementalForm', 'Running incremental batch analysis...', function() {
+        const selectedModels = document.querySelectorAll('.model-checkbox:checked');
+        const selectedDirections = document.querySelectorAll('input[name="direction"]:checked');
+        
+        if (selectedModels.length === 0) {
+            alert('Please select at least one model to analyze.');
+            return false;
+        }
+        
+        if (selectedDirections.length === 0) {
+            alert('Please select at least one processing direction.');
+            return false;
+        }
+        return true;
+    });
+
+    setupFormSubmission('fallbackForm', 'Running fallback days analysis...');
+
+    // Auto-select method based on URL parameters
+    document.addEventListener('DOMContentLoaded', function() {
+        if (shouldSelectFallback) {
+            selectMethod('fallback');
+        } else if (shouldSelectIncremental) {
+            selectMethod('incremental');
+        }
+    });
+</script>
+</body>
+</html>
